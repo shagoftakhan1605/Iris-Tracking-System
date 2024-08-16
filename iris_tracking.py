@@ -80,7 +80,7 @@ def process_frame(frame, face_mesh):
 
 def start_real_time_tracking():
     """Start the real-time tracking using webcam."""
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     with mp_face_mesh.FaceMesh(max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.5) as face_mesh:
         while True:
             ret, frame = cap.read()
