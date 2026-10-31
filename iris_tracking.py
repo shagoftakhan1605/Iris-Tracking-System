@@ -16,10 +16,22 @@ RIGHT_IRIS = [469, 470, 471, 472]  # Right iris landmarks
 LEFT_EYE = [33, 133, 160, 159, 158, 144, 153, 154, 155, 246]
 RIGHT_EYE = [362, 263, 387, 386, 385, 373, 380, 381, 382, 466]
 
-def calculate_angle(center, eye_corners):
-    """Calculate the angle of gaze based on the position of the iris center."""
-    eye_width = eye_corners[1][0] - eye_corners[0][0]
-    relative_position = (center[0] - eye_corners[0][0]) / eye_width
+# Eye corner landmarks that belong to each iris (inner and outer corner)
+LEFT_IRIS_CORNERS = [362, 263]   # same eye as LEFT_IRIS (474-477)
+RIGHT_IRIS_CORNERS = [33, 133]   # same eye as RIGHT_IRIS (469-472)
+
+def relative_iris_position(center, corner_points):
+    """Horizontal iris position inside the eye: 0 = image-left corner, 1 = image-right corner."""
+    left_x = min(pt[0] for pt in corner_points)
+    right_x = max(pt[0] for pt in corner_points)
+    eye_width = right_x - left_x
+    if eye_width == 0:
+        return 0.5
+    return (center[0] - left_x) / eye_width
+
+def calculate_angle(relative_position):
+    """Classify gaze direction and give an approximate angle from the relative iris position.
+    Directions are in image coordinates (the webcam image is not mirrored)."""
 
     # Determine the gaze direction based on the relative position
     if relative_position < 0.4:
@@ -29,7 +41,7 @@ def calculate_angle(center, eye_corners):
     else:
         direction = "Looking Center"
 
-    # Calculate the gaze angle
+    # Approximate gaze angle: a linear mapping, not a calibrated measurement
     angle = (relative_position - 0.5) * 60  # Assuming maximum angle of +/- 30 degrees
 
     return direction, angle
@@ -75,6 +87,16 @@ def process_frame(frame, face_mesh):
             # Draw circles around the iris centers
             cv2.circle(frame, left_iris_center, 10, (0, 255, 0), 2)
             cv2.circle(frame, right_iris_center, 10, (0, 255, 0), 2)
+
+            # Gaze estimate: average the relative iris position of both eyes
+            def to_px(idx):
+                lm = face_landmarks.landmark[idx]
+                return (int(lm.x * frame.shape[1]), int(lm.y * frame.shape[0]))
+            rel_left = relative_iris_position(left_iris_center, [to_px(i) for i in LEFT_IRIS_CORNERS])
+            rel_right = relative_iris_position(right_iris_center, [to_px(i) for i in RIGHT_IRIS_CORNERS])
+            direction, angle = calculate_angle((rel_left + rel_right) / 2)
+            cv2.putText(frame, f"{direction} ({angle:.1f} deg, approx.)", (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
     return frame
 

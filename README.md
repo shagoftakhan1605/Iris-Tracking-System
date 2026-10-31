@@ -1,141 +1,52 @@
-# Iris-Tracking-System
+# Iris Tracking and Simple Gaze Direction
 
-## Overview
+A webcam or video app that finds both irises with MediaPipe Face Mesh, marks their centres, and gives a simple horizontal gaze estimate (left, centre or right) with an approximate angle. A small Tkinter window lets you choose between the webcam and a video file.
 
-The Iris Tracking and Gaze Estimation System is a sophisticated computer vision project designed to track the iris in real-time using a webcam or from an uploaded video file. The system utilizes advanced machine learning and computer vision techniques to estimate the user's gaze direction (left, right, or center) and the corresponding gaze angle. This project leverages the power of the MediaPipe Face Mesh model and integrates it with OpenCV for real-time processing and visualization.
+All code is in [`iris_tracking.py`](iris_tracking.py).
 
-## Results: 
+---
+
+## Results
+
 ![GIFMaker_me](https://github.com/user-attachments/assets/56ac0803-5a15-4aa5-a1a7-57dad1d95041)
 
+---
 
-## Features
+## How It Works
 
-- **Real-Time Iris Tracking**: Track the position of the user's iris in real-time using a webcam.
-- **Video Processing**: Upload and process video files to analyze gaze direction frame by frame.
-- **Gaze Estimation**: Calculate the direction (left, right, or center) and angle of the user's gaze based on the relative position of the iris.
-- **User-Friendly GUI**: A simple graphical interface allows users to choose between real-time tracking and video processing.
+1. **Landmarks:** MediaPipe Face Mesh with `refine_landmarks=True` returns 478 face landmarks, including four points around each iris.
+2. **Iris centre:** the mean of the four iris points for each eye. A green circle is drawn at each centre and the face mesh is drawn over the face.
+3. **Relative position:** for each eye, the iris centre's horizontal position between the two eye corners, from 0 (image-left corner) to 1 (image-right corner). The two eyes are averaged.
+4. **Direction:** below 0.4 is "Looking Left", above 0.6 is "Looking Right", otherwise "Looking Center". Directions refer to the image, which is not mirrored.
+5. **Approximate angle:** `(position - 0.5) x 60`, i.e. a linear mapping to plus or minus 30 degrees. This is a rough indicator, not a calibrated gaze angle.
 
-## Table of Contents
+---
 
-1. [Installation](#installation)
-2. [Usage](#usage)
-    - [Real-Time Tracking](#real-time-tracking)
-    - [Video Processing](#video-processing)
-3. [Technical Details](#technical-details)
-    - [MediaPipe Face Mesh](#mediapipe-face-mesh)
-    - [OpenCV Integration](#opencv-integration)
-    - [Gaze Estimation Algorithm](#gaze-estimation-algorithm)
-4. [Relevance to Human Interaction Research](#relevance-to-human-interaction-research)
-5. [Contributing](#contributing)
-6. 
-## Installation
-
-Before you start using the Iris Tracking and Gaze Estimation System, ensure you have the necessary dependencies installed. This project requires Python 3.6+ and several Python libraries.
-
-### Dependencies
-
-1. **Python 3.6+**
-2. **OpenCV**: For video capture and image processing.
-3. **MediaPipe**: For facial landmark detection, including iris tracking.
-4. **tkinter**: For creating the GUI.
-5. **NumPy**: For mathematical operations and handling arrays.
-
-### Installing the Required Libraries
-
-You can install all the required libraries using `pip`:
+## How to Run
 
 ```bash
-pip install opencv-python mediapipe numpy tk
-```
-
-## Usage
-
-### Real-Time Tracking
-
-To start the iris tracking in real-time using your webcam, run the following command in your terminal:
-
-```bash
+pip install -r requirements.txt
 python iris_tracking.py
 ```
 
-Once the script runs, a GUI will appear. Click on the "Real-Time Tracking" button to start the webcam feed.
+Choose **Real-Time Tracking** for the webcam or **Upload Video** for an `.mp4` or `.avi` file. Press `q` to stop.
 
-### Video Processing
+---
 
-To process an uploaded video file and analyze the gaze direction, click the "Upload Video" button in the GUI. Select the video file you want to analyze, and the system will process each frame, displaying the gaze direction and angle.
+## Fix in This Version
 
-## Technical Details
+The gaze function existed but was never called, so no direction or angle was shown. It is now applied to every frame, using the eye corners that belong to each iris (landmarks 33/133 with iris 469-472, and 362/263 with iris 474-477), and the result is written on the video.
 
-### MediaPipe Face Mesh
+---
 
-**MediaPipe** is a machine learning framework developed by Google that provides pre-trained models for various computer vision tasks, including facial landmark detection. The Face Mesh model detects over 468 facial landmarks in real-time, which are critical for precise facial feature tracking.
+## Limitations
 
-**Key Components**:
+* Horizontal direction only; vertical gaze and head rotation are not taken into account
+* Thresholds and the angle mapping are fixed and not calibrated per person or camera
+* Not suitable for research-grade eye tracking without calibration and validation
 
-- **Facial Landmarks**: The model identifies key points on the face, including the eyes, mouth, nose, and jawline.
-- **Iris Landmarks**: Specific landmarks are designated to the iris, allowing for accurate tracking of the eye's movements.
+---
 
-**How it Works**:
+## Tools
 
-1. **Face Detection**: The model first detects the face in the video frame.
-2. **Landmark Detection**: It then identifies 468 landmarks on the face, with special attention to the eyes and iris.
-3. **Iris Tracking**: The iris landmarks are used to determine the center of the iris, essential for gaze estimation.
-
-### OpenCV Integration
-
-**OpenCV** (Open Source Computer Vision Library) is a powerful tool used for real-time computer vision tasks. In this project, OpenCV is utilized for:
-
-- **Video Capture**: Capturing video input from the webcam or a video file.
-- **Image Processing**: Converting the image from BGR to RGB, drawing circles, and overlaying text on the frames.
-- **Display**: Visualizing the processed frames in a GUI window.
-
-**Key Functions**:
-
-- **cv2.VideoCapture()**: Initializes video capture from a webcam or video file.
-- **cv2.cvtColor()**: Converts the color space from BGR (used by OpenCV) to RGB (used by MediaPipe).
-- **cv2.circle()**: Draws circles on the frame to indicate the iris position.
-- **cv2.putText()**: Displays text on the frame to show the gaze direction and angle.
-
-### Gaze Estimation Algorithm
-
-The gaze estimation algorithm calculates the direction of the user's gaze by analyzing the position of the iris relative to the eye corners and the nose. The steps involved are:
-
-1. **Iris Center Calculation**: The center of the iris is computed using the average of the iris landmarks.
-2. **Relative Positioning**: The iris center is compared to the eye corners to determine the gaze direction.
-3. **Angle Calculation**: An angle is calculated between the nose tip, eye corner, and iris center to quantify the gaze direction.
-
-**Relevance**:
-
-This algorithm is critical in human-computer interaction (HCI) research as it enables systems to understand where the user is looking, which can be used in various applications such as eye-tracking studies, user experience testing, and assistive technologies.
-
-## Relevance to Human Interaction Research
-
-### Importance in HCI
-
-Gaze tracking and estimation play a vital role in Human-Computer Interaction (HCI) research. Understanding where a user is looking can provide valuable insights into their cognitive state, attention, and intentions. The ability to accurately track and estimate gaze direction enables:
-
-- **User Experience Studies**: Understanding how users interact with interfaces by tracking where they look.
-- **Assistive Technology**: Developing tools for individuals with disabilities, allowing them to control devices using their eyes.
-- **Behavioral Analysis**: Studying human behavior and reactions in different scenarios, which is particularly valuable in psychology and cognitive science research.
-- **Augmented Reality (AR) and Virtual Reality (VR)**: Enhancing user interaction within virtual environments by allowing systems to respond to where users are looking.
-
-### Applications
-
-This project can be integrated into several fields of study:
-
-1. **Eye-Tracking Studies**: Used to analyze where users focus their attention on a screen.
-2. **Assistive Devices**: Enables gaze-based interaction for individuals with mobility impairments.
-3. **Marketing Research**: Understanding user engagement with visual content.
-4. **Psychological Research**: Studying the correlation between gaze patterns and cognitive states.
-
-## Contributing
-
-Contributions to the Iris Tracking and Gaze Estimation System are welcome. If you have suggestions for improvements or new features, feel free to submit a pull request or open an issue.
-
-### Guidelines
-
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and ensure the code is well-documented.
-4. Submit a pull request with a detailed explanation of your changes.
-
+Python, MediaPipe, OpenCV, Tkinter
